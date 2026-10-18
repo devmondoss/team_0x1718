@@ -10,6 +10,69 @@ y la ejecución del pago, y sobre la cola de alertas AML.
 Hackathon · Track 04 (seguridad: estafa, extorsión, suplantación) + reto B1
 (investigación de alertas AML).
 
+## Demo para el jurado
+
+La pantalla que se presenta en vivo es **`/experiencia`**: la cuenta de Lucía
+Flores (datos sintéticos, soles) y los tres recorridos del
+[brief UX](docs/ux/brief_ux_conceptual.md). No pide variables de entorno ni
+clave de modelo. El motor de reglas corre en el navegador.
+
+```bash
+npm install
+npm run dev          # http://localhost:3000/experiencia
+npm run build        # el build no exige ANTHROPIC_API_KEY
+npm start            # producción local, mismo path
+```
+
+La consola de agentes (Rosa, la mula, Jorge) sigue en `/`. Sin
+`ANTHROPIC_API_KEY` los agentes van en modo simulado, que es el default. El
+resto de variables está en [`.env.example`](.env.example): todas opcionales.
+No hay secretos en el repo.
+
+### URL pública (Vercel)
+
+Localhost no cuenta para la rúbrica. El proyecto es Next.js y el build de
+`/experiencia` no depende de estado en servidor, así que Vercel lo sirve igual
+que en local.
+
+1. Importar este repositorio en Vercel (framework Next.js, comando `npm run build`).
+2. No hace falta configurar variables para la demo del titular.
+3. Abrir `https://<tu-deploy>/experiencia`.
+
+La consola de `/` guarda casos en memoria del proceso. En serverless cada
+instancia tiene la suya; para esa consola el camino fiel es `npm run servidor`
+en una laptop. La experiencia del titular no tiene ese límite.
+
+### Problema y usuario
+
+Lucía es titular de una cuenta en Perú. Puede estar sin señal, en una llamada
+que la guía, o ante un reto de voz que no puede usar. Hoy el banco detecta la
+operación y espera una respuesta: si nadie contesta, el silencio se parece a
+un sí.
+
+Evidencia citada en el brief: en 2025, 47% de usuarios de finanzas digitales
+en Perú estuvo expuesto a fraude y 11% de los afectados dejó el servicio
+(SBS + CGAP). En Latinoamérica, los intentos de estafa por ingeniería social
+crecieron 155% (BioCatch). Esas cifras están también en la pantalla, como
+contexto, no como alarma.
+
+### Qué hace el motor, y qué no
+
+`lib/experiencia/motor.ts` elige una de cinco salidas —permitir, reto
+adaptativo, reto fuera del canal, retención protectora, bloquear y revisión—
+con la primera regla que aplica (E0–E12). La ficha de la pantalla muestra la
+entrada, las señales con su puntaje, el score, la regla y si los fondos salen.
+Estar inalcanzable no suma riesgo. «La voz no me sirve» es una preferencia de
+canal, no un dato de salud. La IA no mueve dinero: la decisión es la regla.
+
+Los controles de abajo arman una operación suelta. Cambian modo, eventos y
+monto sin romper el recorrido. Sirven para una pregunta fuera del guion.
+
+Quedó fuera a propósito: core bancario, KYC, red interbancaria, un modelo de
+machine learning y un catálogo largo de fraudes. El conteo de evaluaciones es
+de la visita en ese navegador. No es una métrica de usuarios ni una lista de
+espera.
+
 ---
 
 ## ⚠️ Todos los datos son sintéticos
@@ -40,7 +103,7 @@ forma más rápida de ver qué hace el sistema.
 
 ```bash
 npm run dev        # desarrollo en http://localhost:3000
-npm test           # 410 tests
+npm test           # 431 tests
 npm run typecheck
 npm run seed       # regenera lib/data/seed.json (determinista)
 ```

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import type { Caso, Evidencia, EventoTimeline } from "@/lib/contracts";
 
@@ -943,6 +944,9 @@ export default function DemoDashboard() {
             <small>Seguridad que aprende, decisiones que se explican</small>
           </span>
         </a>
+        <Link className="header-link" href="/experiencia">
+          Experiencia del titular
+        </Link>
         <div className="synthetic-notice" role="note">
           <span aria-hidden="true">SYN</span>
           <p>
