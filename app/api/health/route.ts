@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { movimientosEnVivoActivos, repo } from '@/lib/data/repo';
 import { memoria } from '@/lib/memory/store';
 import { modoAgentes } from '@/lib/agents';
+import { estadoNotas } from '@/lib/notas/atomic-memory';
 
 /** GET /api/health — salud del servicio (blueprint §3). */
 export async function GET() {
@@ -26,6 +27,8 @@ export async function GET() {
       movimientos_en_vivo: movimientosEnVivoActivos(),
       token_operador: Boolean(process.env.DEMO_TOKEN?.trim()),
       memoria_persistente: memoria.persistente,
+      /** Notas del analista en Atomic Memory (opcional; nunca deciden). */
+      notas_atomic_memory: estadoNotas().activa,
     },
     memoria: { veredictos: memoria.cantidad, carga: memoria.carga },
   });

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { Caso, DecisionAccion, ReglaPolicy } from "@/lib/contracts";
 import type { JuegoVivo, VistaBanda } from "@/lib/juego/salas";
 import { api, post } from "@/components/juego/api";
+import { tokenOperador } from "@/components/demo-dashboard";
 import { SENALES, TACTICAS, explicar, retiene, soles } from "@/components/juego/datos";
 import { PAISES } from "@/components/juego2d/paises";
 import { TICKETS } from "@/components/juego2d/pausaOPasa";
@@ -129,6 +130,152 @@ function Chip({ decision }: { decision: ResumenCaso["decision"] }) {
     <span className={`${s.chip} ${r ? s.chipRetenido : s.chipPaso}`}>
       {r ? "⏸️" : "→"} {decision.accion} · {decision.regla}
     </span>
+  );
+}
+
+type NotaCuenta = { id: string; cuenta: string; texto: string; caso: string | null; revisada_en: string | null };
+type RespuestaNota = { activa: false; motivo: string } | { activa: true; cuenta: string; nota: NotaCuenta | null };
+const LARGO_NOTA = 280;
+
+/**
+ * Nota de revisión del analista sobre la cuenta destino, en Atomic Memory.
+ * Contexto para el próximo caso de la misma cuenta: no es evidencia, no entra
+ * al expediente y no cambia la decisión. Solo la ve el operador con token; si
+ * no está configurada, no se muestra nada.
+ */
+function NotaRevision({ casoId, cuenta }: { casoId: string; cuenta: string }) {
+  const [estado, setEstado] = useState<RespuestaNota | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [borrador, setBorrador] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const [mensaje, setMensaje] = useState<string | null>(null);
+  const url = `/api/cases/${casoId}/nota`;
+
+  const cargar = useCallback(async () => {
+    try {
+      setEstado(await api<RespuestaNota>(url));
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo consultar la nota.");
+    }
+  }, [url]);
+
+  useEffect(() => {
+    // Sin token es un visitante del proyector: ni se consulta.
+    if (!tokenOperador()) return;
+    // El monitor salta de caso en caso: solo se consulta el que queda en pantalla.
+    const id = window.setTimeout(() => void cargar(), 400);
+    return () => window.clearTimeout(id);
+  }, [cargar]);
+
+  if (estado?.activa === false || (!estado && !error)) return null;
+  const nota = estado?.activa ? estado.nota : null;
+
+  async function guardar() {
+    if (borrador === null) return;
+    setEnviando(true);
+    setMensaje(null);
+    try {
+      const r = await api<{ nota: NotaCuenta }>(url, { method: "PUT", body: JSON.stringify({ texto: borrador }) });
+      setEstado({ activa: true, cuenta, nota: r.nota });
+      setBorrador(null);
+      setMensaje(nota ? "Nota corregida en Atomic Memory." : "Nota guardada en Atomic Memory.");
+    } catch (e) {
+      // El borrador se conserva: nada se dio por guardado.
+      setMensaje(e instanceof Error ? e.message : "No se guardó la nota.");
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  async function borrar() {
+    if (!window.confirm(`¿Borrar la nota de ${cuenta}? Ningún caso futuro la verá.`)) return;
+    setEnviando(true);
+    setMensaje(null);
+    try {
+      await api(url, { method: "DELETE" });
+      setEstado({ activa: true, cuenta, nota: null });
+      setMensaje("Nota borrada de Atomic Memory.");
+    } catch (e) {
+      setMensaje(e instanceof Error ? e.message : "No se borró la nota.");
+    } finally {
+      setEnviando(false);
+    }
+  }
+
+  return (
+    <section className={`${s.panel} ${s.notaRevision}`} aria-label={`Nota de revisión de ${cuenta}`}>
+      <h2>📝 Nota de revisión · {cuenta} · Atomic Memory</h2>
+      {error ? (
+        <div className={s.acciones}>
+          <p className={s.vacio} role="alert">
+            {error} La decisión no depende de esta nota.
+          </p>
+          <button className={s.boton} onClick={() => void cargar()}>
+            Reintentar
+          </button>
+        </div>
+      ) : borrador !== null ? (
+        <>
+          <textarea
+            className={s.campo}
+            value={borrador}
+            maxLength={LARGO_NOTA}
+            rows={3}
+            autoFocus
+            aria-label={`Nota sobre ${cuenta}`}
+            placeholder="Qué revisaste de esta cuenta y qué debería mirar el próximo analista."
+            onChange={(e) => setBorrador(e.target.value)}
+          />
+          <p className={s.nota}>
+            {borrador.length}/{LARGO_NOTA} · Solo hechos de la cuenta, sin datos del cliente.
+          </p>
+          <div className={s.acciones}>
+            <button className={`${s.boton} ${s.botonVerde}`} disabled={enviando || !borrador.trim()} onClick={() => void guardar()}>
+              {nota ? "Guardar corrección" : "Guardar nota"}
+            </button>
+            <button className={s.boton} disabled={enviando} onClick={() => setBorrador(null)}>
+              Cancelar
+            </button>
+          </div>
+        </>
+      ) : nota ? (
+        <>
+          <p className={s.notaTexto}>«{nota.texto}»</p>
+          <p className={s.nota}>
+            {[
+              "Revisada",
+              nota.caso && `en ${nota.caso}`,
+              nota.revisada_en &&
+                `· ${new Date(nota.revisada_en).toLocaleString("es-PE", { dateStyle: "short", timeStyle: "short" })}`,
+            ]
+              .filter(Boolean)
+              .join(" ")}
+          </p>
+          <div className={s.acciones}>
+            <button className={s.boton} disabled={enviando} onClick={() => setBorrador(nota.texto)}>
+              ✏️ Corregir
+            </button>
+            <button className={s.boton} disabled={enviando} onClick={() => void borrar()}>
+              🗑 Borrar
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className={s.acciones}>
+          <p className={s.vacio}>Ningún analista dejó una nota sobre {cuenta}.</p>
+          <button className={s.boton} onClick={() => setBorrador("")}>
+            ＋ Agregar nota
+          </button>
+        </div>
+      )}
+      <p className={s.nota}>Contexto para el próximo analista: no es evidencia ni cambia la decisión.</p>
+      {mensaje && (
+        <p className={s.nota} role="status">
+          {mensaje}
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -290,6 +437,8 @@ function Detalle({ resumen, caso, onVeredicto }: {
           )}
         </section>
       </div>
+
+      <NotaRevision casoId={resumen.id} cuenta={resumen.destino} />
     </>
   );
 }

@@ -19,7 +19,12 @@ describe('health', () => {
   it('por defecto, ningún modo opcional activo', async () => {
     delete process.env.DEMO_TOKEN;
     const h = await (await health()).json();
-    expect(h.modos).toEqual({ movimientos_en_vivo: false, token_operador: false, memoria_persistente: false });
+    expect(h.modos).toEqual({
+      movimientos_en_vivo: false,
+      token_operador: false,
+      memoria_persistente: false,
+      notas_atomic_memory: false,
+    });
   });
 
   it('dice que hay token, pero nunca lo muestra', async () => {

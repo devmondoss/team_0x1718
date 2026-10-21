@@ -65,6 +65,12 @@ operador** para reiniciar y confirmar mulas, y lo genera si falta. Detalle en
 
 Antes de presentar: `GET /api/health` → revisar `modos`.
 
+**Notas del analista (opcional, Atomic Memory).** Con `ATOMICMEMORY_API_URL`,
+`ATOMICMEMORY_API_KEY` y `DEMO_TOKEN`, el operador puede dejar en `/monitor`
+una nota sobre la cuenta destino que el próximo caso a esa cuenta muestra, y
+corregirla o borrarla. Es contexto, no evidencia: no cambia ninguna decisión.
+Detalle en [API.md §7b](docs/work/API.md).
+
 ---
 
 ## Qué hace, en concreto

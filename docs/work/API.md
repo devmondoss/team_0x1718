@@ -369,6 +369,36 @@ Después de esto, una transferencia nueva al mismo destino se pausa por **P1 con
 0 llamadas de IA** (CU-03). Es el momento más fuerte del demo: conviene que la
 UI lo muestre explícitamente.
 
+### 7b. `/api/cases/[id]/nota` — nota de revisión del analista (Atomic Memory, opcional)
+
+El operador deja una nota corta sobre la **cuenta destino** del caso; el
+próximo caso a esa cuenta la muestra en `/monitor`. Es contexto para el
+analista: **no es evidencia, no entra al `Caso` y no cambia la decisión**
+(P1 sigue saliendo solo de la Memoria de mulas de §7).
+
+| Método | Cuerpo | Respuesta |
+|---|---|---|
+| `GET` | — | `{ activa: true, cuenta, nota: { id, cuenta, texto, caso, revisada_en } \| null }` |
+| `PUT` | `{ "texto": "…" }` (1–280 caracteres) | `{ activa: true, guardada: true, nota }` — guarda o **corrige** (una nota por cuenta) |
+| `DELETE` | — | `{ activa: true, borrada: true }`; `404` si no había nota |
+
+Se activa solo con `ATOMICMEMORY_API_URL`, `ATOMICMEMORY_API_KEY` **y**
+`DEMO_TOKEN`; si falta algo, `GET` responde `{ activa: false, motivo }` y
+`PUT`/`DELETE` `409`. Exige `x-demo-token` (`401` antes que el `404`). El
+sujeto de Atomic Memory (`user_id`) se deriva del token del operador en el
+servidor: nunca viene del pedido y no se usa `session_id`. Otro token ve otras
+notas.
+
+Una falla de Atomic Memory (error, timeout de 2,5 s, redirección, respuesta
+mayor a 256 KB o con forma inesperada) responde `502` y **nunca** `guardada` o
+`borrada`: se informa guardada solo si la nota se relee con el mismo texto, y
+borrada solo si Core responde `{ success: true }` y la nota ya no aparece.
+
+Wire (docs.atomicstrata.ai): `POST /v1/memories/ingest/quick` verbatim con
+`metadata.externalId = afs-nota-cuenta:<cuenta>` (re-ingerir corrige en su
+lugar), `GET /v1/memories/by-external-id/:id?user_id=` y
+`DELETE /v1/memories/:id?user_id=`.
+
 ---
 
 ## 8. `GET /api/stats`

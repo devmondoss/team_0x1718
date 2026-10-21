@@ -353,6 +353,28 @@
   margin: 0;
 }
 
+/* Nota del analista (Atomic Memory): contexto, no evidencia */
+.notaRevision {
+  border-style: dashed;
+  border-color: var(--ambar);
+}
+
+.notaTexto {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.campo {
+  width: 100%;
+  resize: vertical;
+  border-radius: 6px;
+  border: 1px solid var(--borde);
+  background: #0f2136;
+  color: var(--texto);
+  padding: 8px;
+  font: inherit;
+}
+
 @keyframes entrar {
   from { opacity: 0; transform: translateX(-6px); }
   to { opacity: 1; transform: none; }
@@ -392,6 +414,7 @@
 .kpi span { font-size: 7px; }
 .kpi strong { font-size: clamp(14px, 1.8vw, 22px); }
 .nota { font-size: 8px; }
+.notaTexto, .campo { font-size: 9px; line-height: 1.7; }
 .boton { font-size: 9px; }
 /* La fuente dibuja mayúsculas con tilde como minúsculas: sin mayúsculas automáticas */
 .panel h2, .kpi span, .sello { text-transform: none; letter-spacing: 0; }
